@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34221.43
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalenderSystem", "CalenderSystem\CalenderSystem.csproj", "{88B778D8-72FF-4F74-BD6A-48CFD03EF56A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalenderSystem.Api", "CalenderSystem\CalenderSystem.Api.csproj", "{88B778D8-72FF-4F74-BD6A-48CFD03EF56A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalenderSystem.Domain", "CalenderSystem.Domain\CalenderSystem.Domain.csproj", "{B2135A08-26BA-4B02-A2AD-EE34ABF92624}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalenderSystem.Infrastructure", "CalenderSystem.Infrastructure\CalenderSystem.Infrastructure.csproj", "{E57FCE25-ABAD-476F-9794-5B89011C3D66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalenderSystem.Application", "CalenderSystem.Application\CalenderSystem.Application.csproj", "{80341E0B-16FD-4466-BBA1-A1104FA27F43}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{88B778D8-72FF-4F74-BD6A-48CFD03EF56A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88B778D8-72FF-4F74-BD6A-48CFD03EF56A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88B778D8-72FF-4F74-BD6A-48CFD03EF56A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2135A08-26BA-4B02-A2AD-EE34ABF92624}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2135A08-26BA-4B02-A2AD-EE34ABF92624}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2135A08-26BA-4B02-A2AD-EE34ABF92624}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2135A08-26BA-4B02-A2AD-EE34ABF92624}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E57FCE25-ABAD-476F-9794-5B89011C3D66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E57FCE25-ABAD-476F-9794-5B89011C3D66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E57FCE25-ABAD-476F-9794-5B89011C3D66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E57FCE25-ABAD-476F-9794-5B89011C3D66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80341E0B-16FD-4466-BBA1-A1104FA27F43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80341E0B-16FD-4466-BBA1-A1104FA27F43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80341E0B-16FD-4466-BBA1-A1104FA27F43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80341E0B-16FD-4466-BBA1-A1104FA27F43}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
