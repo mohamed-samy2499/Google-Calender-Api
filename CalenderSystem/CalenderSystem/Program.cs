@@ -49,7 +49,17 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddInfrastructureDependencies()
 	.AddApplicationDependeicies();
-
+//allow the cors for my blazor app
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", builder =>
+    {
+        builder
+            .WithOrigins("https://localhost:7191") // Replace with the actual origin of your Blazor WebAssembly app
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -58,13 +68,13 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+app.UseCors("AllowSpecificOrigin");
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

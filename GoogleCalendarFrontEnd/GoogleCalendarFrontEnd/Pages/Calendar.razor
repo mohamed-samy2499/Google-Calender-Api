@@ -1,0 +1,46 @@
+﻿@page "/calendar"
+@using Microsoft.AspNetCore.Components
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Google Calendar</PageTitle>
+
+<h3>Google Sign-In</h3>
+
+<button @onclick="InitiateGoogleSignIn">Sign In with Google</button>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="alert alert-danger">@errorMessage</p>
+}
+
+@code {
+    private string? errorMessage;
+    private string? googleUrl; 
+    private async Task InitiateGoogleSignIn()
+    {
+        try
+        {
+
+            // Make a request to your server to initiate Google Sign-In.
+            var response = await Http.GetFromJsonAsync<GoogleSignInResponse>("https://localhost:7190/api/Auth/google-login-url");
+
+            if (response != null)
+            {
+                googleUrl = response.googleLoginUrl;
+                // Redirect to the Google Sign-In URL received from your server.
+                await JSRuntime.InvokeVoidAsync("open", response.googleLoginUrl, "_self");
+            }
+        }
+        catch(Exception ex)
+        {
+            // Handle the exception and display an error message.
+            errorMessage = ex.Message;
+        }
+    }
+    public class GoogleSignInResponse
+    {
+        public string? googleLoginUrl { get; set; }
+    }
+}

@@ -38,8 +38,8 @@ namespace CalenderSystem.Api.Controllers
 
 			var googleLoginUrl = _authService.GetAuthCode(authUri,redirectUri,clientId);
 
-			return Redirect(googleLoginUrl);
-		}
+            return Ok(new { GoogleLoginUrl = googleLoginUrl });
+        }
 		//this endpoint is for call back after the user sign in using google
 		[HttpGet("callback")]
 		public async void GoogleLoginCallback()
