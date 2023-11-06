@@ -1,4 +1,5 @@
-﻿using CalenderSystem.Application.IServices;
+﻿using CalenderSystem.Application.DTOs;
+using CalenderSystem.Application.IServices;
 using CalenderSystem.Application.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
@@ -13,35 +14,43 @@ namespace CalenderSystem.Api.Controllers
 	{
 		private readonly IConfiguration _configuration;
 		private readonly IAuthService _authService;
+		private readonly string? clientId = null!;
+		private readonly string? authUri = null!;
+		private readonly string? clientSecret = null!;
+		private readonly string? redirectUri = null!;
+		private readonly string? tokenUri = null!;
 
 		public AuthController(IConfiguration configuration,IAuthService authService)
 		{
 			_configuration = configuration;
 			_authService = authService;
+			clientId = _configuration["Authentication:Google:client_id"];
+			authUri = _configuration["Authentication:Google:auth_uri"];
+			clientSecret = _configuration["Authentication:Google:client_secret"];
+			redirectUri = _configuration["Authentication:Google:redirect_uri"];
+			tokenUri = _configuration["Authentication:Google:token_uri"];
+
 		}
 
 		[HttpGet("google-login-url")]
 		public IActionResult GoogleLogin()
 		{
-			var clientId = _configuration["Authentication:Google:client_id"];
-			var authUri = _configuration["Authentication:Google:auth_uri"];
-			var clientSecret = _configuration["Authentication:Google:client_secret"];
-			var redirectUri = _configuration["Authentication:Google:redirect_uri"];
 
-
-			// Construct the Google login URL with the appropriate parameters
 			var googleLoginUrl = _authService.GetAuthCode(authUri,redirectUri,clientId);
 
 			return Redirect(googleLoginUrl);
 		}
-
+		//this endpoint is for call back after the user sign in using google
 		[HttpGet("callback")]
-		public void GoogleLoginCallback(string code,string error,string state)
+		public async void GoogleLoginCallback()
 		{
-			if(string.IsNullOrEmpty(error))
+			string? code = HttpContext.Request.Query["code"];
+			string? scope = HttpContext.Request.Query["scope"];
+			if (!string.IsNullOrEmpty(code))
 			{
-
-			 Ok();
+				GoogleTokenResponseDTO  tokenRes = await  _authService
+					.GetTokens(code, redirectUri, clientId, clientSecret, tokenUri);
+				if (tokenRes != null) { }
 			}
 
 		}
