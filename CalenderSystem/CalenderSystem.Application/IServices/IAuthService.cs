@@ -9,6 +9,7 @@ namespace CalenderSystem.Application.IServices
 {
 	public interface IAuthService
 	{
+		string GetAuthCode(string authUrl, string redirectUrl, string clientId);
 		Task<SignInResult> ExternalLoginSignInAsync(ExternalLoginInfo info);
 		Task SignOutAsync();
 	}

@@ -1,4 +1,5 @@
-﻿using CalenderSystem.Application.IServices;
+﻿using CalenderSystem.Application.Helper;
+using CalenderSystem.Application.IServices;
 using CalenderSystem.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -45,6 +46,24 @@ namespace CalenderSystem.Application.Services
 			await _signInManager.SignInAsync(user, isPersistent: false);
 
 			return SignInResult.Success;
+		}
+		public string GetAuthCode(string authUrl, string redirectUrl, string clientId)
+		{
+			string scopeURL1 = authUrl + "?redirect_uri={0}&prompt={1}&response_type={2}&client_id={3}&scope={4}&access_type={5}";
+
+			var redirectURL = redirectUrl;
+
+			string prompt = "consent";
+
+			string response_type = "code";
+			string clientID = clientId;
+			string scope = "https://www.googleapis.com/auth/calendar + https://www.googleapis.com/auth/calendar.events";
+
+			string access_type = "offline";
+			string redirect_uri_encode = redirectURL;//Method.urlEncodeForGoogle(redirectURL);
+			var mainURL = string.Format(scopeURL1, redirect_uri_encode, prompt, response_type, clientID, scope, access_type);
+
+			return mainURL;
 		}
 
 		public async Task SignOutAsync()
