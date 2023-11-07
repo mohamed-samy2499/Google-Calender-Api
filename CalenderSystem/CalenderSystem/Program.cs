@@ -15,6 +15,9 @@ builder.Services.AddControllers();
 //Adding the DbContext 
 builder.Services.AddDbContext<AppDbContext>(opt =>
 				opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+// adding identity services like user manager, role manager etc.
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opt => opt.SignIn.RequireConfirmedAccount = true )
+    .AddEntityFrameworkStores<AppDbContext>();
 //add google auth
 builder.Services.AddAuthentication()
 .AddGoogle(options =>
@@ -22,9 +25,6 @@ builder.Services.AddAuthentication()
     options.ClientId = builder.Configuration["Authentication:Google:client_id"];
     options.ClientSecret = builder.Configuration["Authentication:Google:client_secret"];
 });
-// adding identity services like user manager, role manager etc.
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opt => opt.SignIn.RequireConfirmedAccount = true )
-    .AddEntityFrameworkStores<AppDbContext>();
 //
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

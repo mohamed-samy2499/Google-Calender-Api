@@ -69,5 +69,18 @@ namespace CalenderSystem.Infrastructure.Repositories.ApplicationUserRepositories
 
 			return entity;
 		}
-	}
+        public virtual async Task<ApplicationUser> GetByEmailAsync(string email, Expression<Func<ApplicationUser, object>>[] includes = null)
+        {
+            IQueryable<ApplicationUser> query = _appDbContext.Set<ApplicationUser>();//.Where(x => x.IsDeleted == false);
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            var entity = await query.FirstOrDefaultAsync(x => x.Email == email);
+
+            return entity;
+        }
+    }
 }

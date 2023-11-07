@@ -88,19 +88,16 @@ namespace CalenderSystem.Api.Controllers
 						//get the email and google id of the user
                         var userInfo = await _authService.GetUserInfoAsync(tokenRes.Access_token);
 						
-						var googleUserId = userInfo.Id;
-                        var email = userInfo.email;
                         
-                        if (string.IsNullOrEmpty(googleUserId) || string.IsNullOrEmpty(email))
-                        {
-                            
+                        if (userInfo == null)
+                        {                            
                             return BadRequest("email or googleUserId is null");
                         }
 
 						//add or update the user if it already exists
 						var AddUserResult = await _authService.AddOrUpdateUserAsync(tokenRes, userInfo);
 						if (AddUserResult != null)
-							return AddUserResult ? Ok("user added successfully") 
+							return AddUserResult ? Ok(tokenRes) 
 								: BadRequest("couldn't create or update the user");
 					}
 					return BadRequest("token is null");
