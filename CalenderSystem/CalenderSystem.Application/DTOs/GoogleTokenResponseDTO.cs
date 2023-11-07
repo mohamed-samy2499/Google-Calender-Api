@@ -8,7 +8,7 @@ namespace CalenderSystem.Application.DTOs
 {
 	public class GoogleTokenResponseDTO
 	{
-		public string Access_type
+		public string Access_token
 		{
 			get;
 			set;

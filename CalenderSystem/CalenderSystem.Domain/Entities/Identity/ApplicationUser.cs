@@ -11,9 +11,10 @@ namespace CalenderSystem.Domain.Entities.Identity
 	{
 		public string GoogleAccessToken { get; set; } = null!;
 		public string GoogleRefreshToken { get; set; } = null!;
-		public DateTime GoogleTokenExpiration { get; set; }
-		// ---------- relations -----------
-		public string GoogleCalenderId { get; set; } = null!;
+		public string GoogleUserId { get; set; } = null!;
+		public DateTime? GoogleTokenExpiration { get; set; }
+        // ---------- relations -----------
+        public string? GoogleCalenderId { get; set; } = null!;
 		public ICollection<Event>? Events { get; set; }
 	}
 }

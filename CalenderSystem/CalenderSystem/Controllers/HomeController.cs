@@ -7,6 +7,10 @@ namespace CalenderSystem.Api.Controllers
 	[ApiController]
 	public class HomeController : ControllerBase
 	{
-
+		[HttpGet]
+		public IActionResult Get()
+		{
+			return Ok("Home Index");
+		}
 	}
 }

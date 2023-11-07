@@ -11,6 +11,10 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using MovieSystem.Application.Services;
+using CalenderSystem.Infrastructure.Repositories.ApplicationUserRepositories;
 
 namespace CalenderSystem.Application.Services
 {
@@ -18,40 +22,83 @@ namespace CalenderSystem.Application.Services
 	{
 		private readonly SignInManager<ApplicationUser> _signInManager;
 		private readonly UserManager<ApplicationUser> _userManager;
-		private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClient;
 
-		public AuthService(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+        private readonly IApplicationUserRepository _applicationUserRepository;
+
+        public AuthService(SignInManager<ApplicationUser> signInManager,
+			UserManager<ApplicationUser> userManager,
+            IApplicationUserRepository applicationUserRepository)
 		{
 			_signInManager = signInManager;
 			_userManager = userManager;
 			_httpClient = new HttpClient();
-		}
-		public async Task<SignInResult> ExternalLoginSignInAsync(ExternalLoginInfo info)
-		{
-			var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-			var user = await _userManager.FindByEmailAsync(email);
-
-			if (user == null)
+            _applicationUserRepository = applicationUserRepository;
+        }
+		//getting the user email and google Id
+        public async Task<UserInfoResponseDTO> GetUserInfoAsync(string accessToken)
+        {
+            var userInfo = new UserInfoResponseDTO();
+            var userInfoResponse = await _httpClient.GetAsync("https://www.googleapis.com/oauth2/v1/userinfo?access_token=" + accessToken);
+            if (userInfoResponse.IsSuccessStatusCode)
+            {
+                var userInfoContent = await userInfoResponse.Content.ReadAsStringAsync();
+                userInfo = JsonConvert.DeserializeObject<UserInfoResponseDTO>(userInfoContent);
+            }
+            return userInfo;
+        }
+		//adding or updating a user after signing in using google
+        public async Task<bool> AddOrUpdateUserAsync(GoogleTokenResponseDTO tokens,
+			UserInfoResponseDTO userInfo)
+        {
+			try
 			{
-				// Handle the case where the user doesn't exist in your application.
-				// You can create a new user or take appropriate actions.
-				// For this example, we create a new user with the email.
-				user = new ApplicationUser { UserName = email, Email = email };
-				var result = await _userManager.CreateAsync(user);
 
-				if (!result.Succeeded)
+				var googleUserId = userInfo.Id;
+				var email = userInfo.email;
+				var user = await _userManager.FindByLoginAsync("Google", googleUserId);
+				DateTime currentDateTime = DateTime.Now;
+				DateTime expirationDateTime = currentDateTime.AddSeconds(tokens.Expires_in);
+				if (user == null)
 				{
-					// Handle the case where user creation failed.
-					// You may want to return an error message or redirect the user to an error page.
-					return null;
+					user = new ApplicationUser
+					{
+						UserName = email,
+						Email = email,
+						GoogleUserId = googleUserId,
+						GoogleAccessToken = tokens.Access_token,
+						GoogleRefreshToken = tokens.Refresh_token,
+						GoogleTokenExpiration = expirationDateTime
+					};
+					var result = await _applicationUserRepository.CreateAsync(user);
+					if (result == null)
+					{
+						return false;
+					}
+					await _signInManager.SignInAsync(user, isPersistent: false);
+					return true;
+				}
+				else
+				{
+					user.GoogleAccessToken = tokens.Access_token;
+					user.GoogleRefreshToken = tokens.Refresh_token;
+                
+					user.GoogleTokenExpiration = expirationDateTime;
+					// Update the user in the database
+					var updateResult = await _applicationUserRepository.UpdateAsync(user);
+					if (updateResult == null)
+						return false;
+					return true;
 				}
 			}
+			catch (Exception ex)
+			{
+				var msg = ex.Message;
+				return false;
+			}
+        }
 
-			// Sign in the user with the user manager.
-			await _signInManager.SignInAsync(user, isPersistent: false);
-
-			return SignInResult.Success;
-		}
+   
 		//a method for generating the google sign in link 
 		public string GetAuthCode(string authUrl, string redirectUrl, string clientId)
 		{
@@ -63,9 +110,9 @@ namespace CalenderSystem.Application.Services
 
 			string response_type = "code";
 			string clientID = clientId;
-			string scope = "https://www.googleapis.com/auth/calendar + https://www.googleapis.com/auth/calendar.events";
+			string scope = "https://www.googleapis.com/auth/calendar + https://www.googleapis.com/auth/calendar.events  + https://www.googleapis.com/auth/userinfo.email + https://www.googleapis.com/auth/userinfo.profile";
 
-			string access_type = "offline";
+            string access_type = "offline";
 			string redirect_uri_encode = redirectURL;//Method.urlEncodeForGoogle(redirectURL);
 			var mainURL = string.Format(scopeURL1, redirect_uri_encode, prompt, response_type, clientID, scope, access_type);
 
@@ -91,7 +138,9 @@ namespace CalenderSystem.Application.Services
 				throw new Exception($"Failed to authenticate: {responseContent}");
 			}
 		}
-		public async Task SignOutAsync()
+
+
+        public async Task SignOutAsync()
 		{
 			await _signInManager.SignOutAsync();
 		}

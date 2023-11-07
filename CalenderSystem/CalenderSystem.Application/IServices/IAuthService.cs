@@ -1,4 +1,5 @@
 ﻿using CalenderSystem.Application.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,8 @@ namespace CalenderSystem.Application.IServices
 		string GetAuthCode(string authUrl, string redirectUrl, string clientId);
 		Task<GoogleTokenResponseDTO> GetTokens(string code, string redirectUrl,
 			string clientId, string clientSecret, string tokenUrl);
-		Task<SignInResult> ExternalLoginSignInAsync(ExternalLoginInfo info);
+		Task<UserInfoResponseDTO> GetUserInfoAsync(string accessToken);
+		Task<bool> AddOrUpdateUserAsync(GoogleTokenResponseDTO tokens, UserInfoResponseDTO userInfo);
 		Task SignOutAsync();
 	}
 }
