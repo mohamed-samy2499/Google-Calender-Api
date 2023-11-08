@@ -57,7 +57,6 @@ namespace CalenderSystem.Application.Services
 				var googleUserId = userInfo.Id;
 				var email = userInfo.email;
 				var user = await _applicationUserRepository.GetByEmailAsync(email);
-				//var user = await _userManager.FindByEmailAsync(email);
 				DateTime currentDateTime = DateTime.Now;
 				DateTime expirationDateTime = currentDateTime.AddSeconds(tokens.Expires_in);
 				if (user == null)

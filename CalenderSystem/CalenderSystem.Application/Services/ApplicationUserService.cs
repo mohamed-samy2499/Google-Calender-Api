@@ -33,7 +33,10 @@ namespace MovieSystem.Application.Services
         {
             return await _applicationUserRepository.GetByIdAsync(id);
         }
-
+        public async Task<ApplicationUser> GetApplicationUserByEmailAsync(string email)
+        {
+            return await _applicationUserRepository.GetByIdAsync(email);
+        }
         public async Task<ApplicationUser> UpdateApplicationUserAsync(ApplicationUser Dto)
         {
             return await _applicationUserRepository.UpdateAsync(Dto);

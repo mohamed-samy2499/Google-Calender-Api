@@ -11,6 +11,8 @@ namespace CalenderSystem.Domain.Entities
     {
         public string? Summary { get; set; } = null!;
         public string? Description { get; set; } = null!;
+        public string? Location { get; set; } = null!;
+
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
         public string? RefreshToken { get; set; }

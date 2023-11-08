@@ -7,6 +7,7 @@ namespace CalenderSystem.Application.IServices
     {
         Task<IEnumerable<ApplicationUser>> GetAllApplicationUsersAsync();
         Task<ApplicationUser> GetApplicationUserByIdAsync(string id);
+        Task<ApplicationUser> GetApplicationUserByEmailAsync(string email);
 
         Task<string> AddApplicationUserAsync(ApplicationUser Dto);
         Task<ApplicationUser> UpdateApplicationUserAsync(ApplicationUser Dto);
