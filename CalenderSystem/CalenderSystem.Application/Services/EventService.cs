@@ -40,8 +40,9 @@ namespace CalenderSystem.Application.Services
         #endregion
         #region Google Calendar Events
         //Google Calendar Events CRUD
-        public async Task<List<GetEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
-            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery)
+        public async Task<PaginatedResponse<GetGoogleCalendarEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
+            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery,
+            int page, int pageSize)
         {
             try
             {
@@ -89,8 +90,16 @@ namespace CalenderSystem.Application.Services
                         filteredEvents = filteredEvents.Where(e => e.Summary.Contains(searchQuery)
                         || e.Description.Contains(searchQuery)).ToList();
                     }
-                    var mappedResult = new List<GetEventListResponse>();
-                    foreach(var eventItem in filteredEvents)
+                    // Implement pagination
+                    var totalCount = filteredEvents.Count();
+                    var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                    var paginatedEvents = filteredEvents
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+                    var mappedResult = new List<GetGoogleCalendarEventListResponse>();
+                    foreach(var eventItem in paginatedEvents)
                     {
                         if(eventItem.Start.DateTime == null ||eventItem.End.DateTime == null)
                         {
@@ -98,8 +107,9 @@ namespace CalenderSystem.Application.Services
                             DateTime.TryParse(eventItem.Start.Date, out start);
                             DateTime end;
                             DateTime.TryParse(eventItem.End.Date, out end);
-                            var mappedEvent = new GetEventListResponse()
+                            var mappedEvent = new GetGoogleCalendarEventListResponse()
                             {
+                                Id = eventItem.Id,
                                 Summary = eventItem.Summary,
                                 Description = eventItem.Description.Replace("\\n","\n"),
                                 StartDateTime = start,
@@ -112,8 +122,9 @@ namespace CalenderSystem.Application.Services
                         else
                         {
 
-                            var mappedEvent = new GetEventListResponse() 
+                            var mappedEvent = new GetGoogleCalendarEventListResponse() 
                             {
+                                Id = eventItem.Id,
                                 Summary = eventItem.Summary,
                                 Description = eventItem.Description,
                                 StartDateTime = (DateTime)eventItem.Start.DateTime,
@@ -123,8 +134,9 @@ namespace CalenderSystem.Application.Services
                             mappedResult.Add(mappedEvent);
                         }
                     }
-
-                    return mappedResult;
+                    // Include pagination information in your response
+                    var response = new PaginatedResponse<GetGoogleCalendarEventListResponse>(mappedResult, page, totalPages, pageSize, totalCount);
+                    return response;
                 }
                 else
                 {

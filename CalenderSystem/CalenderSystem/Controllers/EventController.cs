@@ -70,7 +70,9 @@ namespace CalenderSystem.Api.Controllers
         [HttpGet("get-allGoogleCalendarEvents")]
         public async Task<ActionResult> GetAllCalendarEvents([FromQuery] DateTime? startDate,
                                                              [FromQuery] DateTime? endDate,
-                                                             [FromQuery] string? searchQuery)
+                                                             [FromQuery] string? searchQuery,
+                                                             [FromQuery] int page = 1,
+                                                             [FromQuery] int pageSize = 10)
         {
             try
             {
@@ -82,7 +84,7 @@ namespace CalenderSystem.Api.Controllers
                 }
                 var response = await _eventService.GetAllGoogleCalendarEvent(user,
                     clientId, clientSecret,
-                    startDate,endDate,searchQuery);
+                    startDate,endDate,searchQuery,page,pageSize);
                 if (response != null )
                 {
                     return Ok(response);
@@ -90,7 +92,6 @@ namespace CalenderSystem.Api.Controllers
                 else
                 {
                     // Handle the error
-                    Console.WriteLine($"Error creating event: {response}");
                     return BadRequest("failed to fetch the events");
                 }
             }

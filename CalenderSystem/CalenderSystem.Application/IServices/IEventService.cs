@@ -8,8 +8,9 @@ namespace CalenderSystem.Application.IServices
     public interface IEventService
     {
         #region Google Calendar Events CRUD
-        Task<List<GetEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
-            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery);
+        Task<PaginatedResponse<GetGoogleCalendarEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
+            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery,
+            int page, int pageSize);
         Task<string> AddGoogleCalendarEvent(AddEventDTO eventDto, ApplicationUser user,
             string clientId, string clientSecret);
         Task<string> UpdateGoogleCalendarEvent(UpdateEventDTO updatedEventDto,
