@@ -14,6 +14,7 @@ using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Services;
 using Google.Apis.Calendar.v3.Data;
+using System.Linq.Expressions;
 
 namespace CalenderSystem.Application.Services
 {
@@ -30,6 +31,8 @@ namespace CalenderSystem.Application.Services
             _httpClient = new HttpClient(); 
         }
         #endregion
+        #region Google Calendar Events
+        //Google Calendar Events CRUD
         public async Task<string> AddGoogleCalendarEvent(AddEventDTO eventDto, ApplicationUser user,
             string clientId,string clientSecret)
         {
@@ -98,7 +101,104 @@ namespace CalenderSystem.Application.Services
                 return string.Empty;
             }
             
-        } 
+        }
+
+        public async Task<string> UpdateGoogleCalendarEvent(UpdateEventDTO updatedEventDto, 
+            ApplicationUser user, string clientId, string clientSecret)
+        {
+            try
+            {
+                // Get user credentials
+                var token = new TokenResponse
+                {
+                    RefreshToken = user.GoogleRefreshToken
+                };
+                var credentials = new UserCredential(new GoogleAuthorizationCodeFlow(
+                    new GoogleAuthorizationCodeFlow.Initializer
+                    {
+                        ClientSecrets = new ClientSecrets
+                        {
+                            ClientId = clientId,
+                            ClientSecret = clientSecret
+                        }
+                    }), "user", token);
+
+                // Initiate the Google Calendar service
+                var service = new CalendarService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credentials,
+                });
+
+                // Retrieve the existing event by event ID
+                EventsResource.GetRequest getRequest = service.Events.Get("primary", updatedEventDto.GoogleCalendarEventId);
+                Google.Apis.Calendar.v3.Data.Event existingEvent = getRequest.Execute();
+
+                if (existingEvent == null)
+                {
+                    return string.Empty; // Event not found
+                }
+
+                // Update the event properties
+                existingEvent.Summary = updatedEventDto.Summary;
+                existingEvent.Location = updatedEventDto.Location;
+                existingEvent.Description = updatedEventDto.Description;
+                existingEvent.Start.DateTime = updatedEventDto.StartTime;
+                existingEvent.End.DateTime = updatedEventDto.EndTime;
+
+                // Execute the event update
+                EventsResource.UpdateRequest updateRequest = service.Events.Update(existingEvent,
+                    "primary", updatedEventDto.GoogleCalendarEventId);
+                Google.Apis.Calendar.v3.Data.Event updatedEvent = updateRequest.Execute();
+
+                return updatedEvent.Id;
+            }
+            catch (Exception e)
+            {
+                return string.Empty;
+            }
+        }
+        public async Task<bool> DeleteGoogleCalendarEvent(string eventId, 
+            ApplicationUser user, string clientId, string clientSecret)
+        {
+            try
+            {
+                // Get user credentials
+                var token = new TokenResponse
+                {
+                    RefreshToken = user.GoogleRefreshToken
+                };
+                var credentials = new UserCredential(new GoogleAuthorizationCodeFlow(
+                    new GoogleAuthorizationCodeFlow.Initializer
+                    {
+                        ClientSecrets = new ClientSecrets
+                        {
+                            ClientId = clientId,
+                            ClientSecret = clientSecret
+                        }
+                    }), "user", token);
+
+                // Initialize the Google Calendar service
+                var service = new CalendarService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credentials,
+                });
+
+                // Execute the event deletion by eventId
+                await service.Events.Delete("primary", eventId).ExecuteAsync();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        #endregion
+        #region My Database Events
+
+
+        //Events in Database CRUD
         public async Task<string> AddEventAsync(CalenderSystem.Domain.Entities.Event Dto)
         {
             return await _eventRepository.CreateAsync(Dto);
@@ -111,7 +211,10 @@ namespace CalenderSystem.Application.Services
 
         public async Task<IEnumerable<CalenderSystem.Domain.Entities.Event>> GetAllEventsAsync()
         {
-            return await _eventRepository.GetAllAsync();
+            var includes = new Expression<Func<CalenderSystem.Domain.Entities.Event, object>>[] {
+                myEvent => myEvent.User
+            };
+            return await _eventRepository.GetAllAsync(includes);
         }
 
         public async Task<CalenderSystem.Domain.Entities.Event> GetEventByIdAsync(int id)
@@ -123,5 +226,7 @@ namespace CalenderSystem.Application.Services
         {
             return await _eventRepository.UpdateAsync(Dto);
         }
+
+        #endregion
     }
 }
