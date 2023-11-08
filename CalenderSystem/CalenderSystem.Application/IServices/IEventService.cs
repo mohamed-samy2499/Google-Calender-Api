@@ -1,4 +1,5 @@
 ﻿using CalenderSystem.Application.DTOs;
+using CalenderSystem.Application.Feature.Events.Queries.Response;
 using CalenderSystem.Domain.Entities;
 using CalenderSystem.Domain.Entities.Identity;
 
@@ -7,6 +8,8 @@ namespace CalenderSystem.Application.IServices
     public interface IEventService
     {
         #region Google Calendar Events CRUD
+        Task<List<GetEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
+            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery);
         Task<string> AddGoogleCalendarEvent(AddEventDTO eventDto, ApplicationUser user,
             string clientId, string clientSecret);
         Task<string> UpdateGoogleCalendarEvent(UpdateEventDTO updatedEventDto,

@@ -26,4 +26,9 @@
     <ProjectReference Include="..\CalenderSystem.Infrastructure\CalenderSystem.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Feature\ApplicationUser\Commands\" />
+    <Folder Include="Feature\ApplicationUser\Queries\" />
+  </ItemGroup>
+
 </Project>

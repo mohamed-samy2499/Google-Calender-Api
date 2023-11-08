@@ -14,9 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+    .AddJsonOptions(opt =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        // ignore null values when serializing to json
+        opt.JsonSerializerOptions.DefaultIgnoreCondition
+                       = JsonIgnoreCondition.WhenWritingNull;
     });
 builder.Services.AddSwaggerGen(options =>
 {

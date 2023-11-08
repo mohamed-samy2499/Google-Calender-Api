@@ -15,6 +15,10 @@ using Google.Apis.Calendar.v3;
 using Google.Apis.Services;
 using Google.Apis.Calendar.v3.Data;
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
+using AutoMapper;
+using CalenderSystem.Application.Feature.Events.Queries.Response;
+using Microsoft.AspNetCore.Components;
 
 namespace CalenderSystem.Application.Services
 {
@@ -24,15 +28,115 @@ namespace CalenderSystem.Application.Services
         private readonly IEventRepository _eventRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly HttpClient _httpClient;
-        public EventService(IEventRepository eventRepository, UserManager<ApplicationUser> userManager)
+        private readonly IMapper _mapper;
+        public EventService(IEventRepository eventRepository, UserManager<ApplicationUser> userManager
+            ,IMapper mapper)
         {
 			_eventRepository = eventRepository;
             _userManager = userManager;
+            _mapper = mapper;
             _httpClient = new HttpClient(); 
         }
         #endregion
         #region Google Calendar Events
         //Google Calendar Events CRUD
+        public async Task<List<GetEventListResponse>> GetAllGoogleCalendarEvent(ApplicationUser user,
+            string clientId, string clientSecret, DateTime? startDate, DateTime? endDate, string? searchQuery)
+        {
+            try
+            {
+                // Get user credentials
+                var token = new TokenResponse
+                {
+                    RefreshToken = user.GoogleRefreshToken
+                };
+                var credentials = new UserCredential(new GoogleAuthorizationCodeFlow(
+                    new GoogleAuthorizationCodeFlow.Initializer
+                    {
+                        ClientSecrets = new ClientSecrets
+                        {
+                            ClientId = clientId,
+                            ClientSecret = clientSecret
+                        }
+                    }), "user", token);
+
+                // Initiate the Google Calendar service
+                var service = new CalendarService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credentials,
+                });
+
+                // Retrieve the existing event by event ID
+                Google.Apis.Calendar.v3.Data.Events calendarEvents = service.Events.List("primary").Execute();
+
+
+                if (calendarEvents.Items != null && calendarEvents.Items.Count > 0)
+                {
+                    var filteredEvents = calendarEvents.Items;
+
+                    if (startDate.HasValue)
+                    {
+                        filteredEvents = filteredEvents.Where(e => e.Start.DateTime >= startDate).ToList();
+                    }
+
+                    if (endDate.HasValue)
+                    {
+                        filteredEvents = filteredEvents.Where(e => e.Start.DateTime <= endDate).ToList();
+                    }
+
+                    if (!string.IsNullOrEmpty(searchQuery))
+                    {
+                        filteredEvents = filteredEvents.Where(e => e.Summary.Contains(searchQuery)
+                        || e.Description.Contains(searchQuery)).ToList();
+                    }
+                    var mappedResult = new List<GetEventListResponse>();
+                    foreach(var eventItem in filteredEvents)
+                    {
+                        if(eventItem.Start.DateTime == null ||eventItem.End.DateTime == null)
+                        {
+                            DateTime start;
+                            DateTime.TryParse(eventItem.Start.Date, out start);
+                            DateTime end;
+                            DateTime.TryParse(eventItem.End.Date, out end);
+                            var mappedEvent = new GetEventListResponse()
+                            {
+                                Summary = eventItem.Summary,
+                                Description = eventItem.Description.Replace("\\n","\n"),
+                                StartDateTime = start,
+                                EndDateTime = end,
+                                Location = eventItem.Location
+                            };
+                            mappedResult.Add(mappedEvent);
+
+                        }
+                        else
+                        {
+
+                            var mappedEvent = new GetEventListResponse() 
+                            {
+                                Summary = eventItem.Summary,
+                                Description = eventItem.Description,
+                                StartDateTime = (DateTime)eventItem.Start.DateTime,
+                                EndDateTime = (DateTime)eventItem.End.DateTime,
+                                Location = eventItem.Location
+                            };
+                            mappedResult.Add(mappedEvent);
+                        }
+                    }
+
+                    return mappedResult;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        }
         public async Task<string> AddGoogleCalendarEvent(AddEventDTO eventDto, ApplicationUser user,
             string clientId,string clientSecret)
         {
@@ -211,10 +315,10 @@ namespace CalenderSystem.Application.Services
 
         public async Task<IEnumerable<CalenderSystem.Domain.Entities.Event>> GetAllEventsAsync()
         {
-            var includes = new Expression<Func<CalenderSystem.Domain.Entities.Event, object>>[] {
-                myEvent => myEvent.User
-            };
-            return await _eventRepository.GetAllAsync(includes);
+            //var includes = new Expression<Func<CalenderSystem.Domain.Entities.Event, object>>[] {
+            //    myEvent => myEvent.User
+            //};
+            return await _eventRepository.GetAllAsync();
         }
 
         public async Task<CalenderSystem.Domain.Entities.Event> GetEventByIdAsync(int id)

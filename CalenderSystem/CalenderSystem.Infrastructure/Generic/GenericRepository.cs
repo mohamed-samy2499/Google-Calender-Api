@@ -68,7 +68,7 @@ namespace CalenderSystem.Infrastructure.Generic
                 query = query.Include(include);
             }
 
-            var entity = await query.FirstOrDefaultAsync(x => x.Id == id);
+            var entity = await query.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
 
 
 

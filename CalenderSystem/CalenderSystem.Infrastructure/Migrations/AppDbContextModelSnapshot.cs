@@ -46,7 +46,6 @@ namespace CalenderSystem.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("GoogleCalendarEventId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
@@ -65,7 +64,6 @@ namespace CalenderSystem.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -296,8 +294,7 @@ namespace CalenderSystem.Infrastructure.Migrations
                     b.HasOne("CalenderSystem.Domain.Entities.Identity.ApplicationUser", "User")
                         .WithMany("Events")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("User");
                 });

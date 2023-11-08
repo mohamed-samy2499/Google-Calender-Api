@@ -18,8 +18,8 @@ namespace CalenderSystem.Domain.Entities
         public string? RefreshToken { get; set; }
 
         // ---------- relations -----------
-        public string GoogleCalendarEventId { get; set; } = null!;
-        public string UserId { get; set; } = null!;
+        public string? GoogleCalendarEventId { get; set; } = null!;
+        public string? UserId { get; set; } = null!;
         public ApplicationUser? User { get; set; }
     }
 
