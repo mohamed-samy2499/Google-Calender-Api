@@ -1,8 +1,30 @@
 # Google-Calender-Api
 A n tier project with 'Domain Layer' 'Infrastructure' 'Application Layer' 'Api Layer'.
 Repository and cqrs Design patterns were used.
+# Instructions for setting up and running the project
+## Cloning the project
+- Download .Net 7 Sdk.
+- clone the github repo
+## Setting Up Google Credentials
+- Create a Google Cloud Project.
+- Enable the Google Calendar API.
+- Create OAuth Credentials
+- Add Credentials to your ASP.NET Core App
+  - Open the `appsettings.json` file in your project and update the vlaues.
+    ```json
+    {
+      "client_id": "YOUR_CLIENT_ID",
+      "client_secret": "YOUR_CLIENT_SECRET"
+    }
+    ```
+## Running the ASP.NET Core App
+- Restore Dependencies.
+- Apply Migrations.
+- Run the Application.
+- Access Swagger.
 
-Here is a Documentation for the controllers
+   
+# Controllers Documentation
 
 # AuthController
 
