@@ -23,6 +23,45 @@ builder.Services.AddControllers()
         opt.JsonSerializerOptions.DefaultIgnoreCondition
                        = JsonIgnoreCondition.WhenWritingNull;
     });
+
+//Adding the DbContext 
+builder.Services.AddDbContext<AppDbContext>(opt =>
+				opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+// add authentication services 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = false;
+    o.SaveToken = false;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+        ValidAudience = builder.Configuration["JWT:ValidAudience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+    };
+    o.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            // Handle unauthorized here, e.g., redirect to an API endpoint
+            context.HandleResponse();
+            context.Response.Redirect("/api/Auth/access-denied");
+            return Task.CompletedTask;
+        }
+    };
+});
+// adding identity services like user manager, role manager etc.
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>();
+//swagger
 builder.Services.AddSwaggerGen(options =>
 {
     // ...
@@ -50,36 +89,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-//Adding the DbContext 
-builder.Services.AddDbContext<AppDbContext>(opt =>
-				opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-//add google auth
-// add authentication services 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(o =>
-{
-    o.RequireHttpsMetadata = false;
-    o.SaveToken = false;
-    o.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-        ValidAudience = builder.Configuration["JWT:ValidAudience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
-    };
-});
-// adding identity services like user manager, role manager etc.
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
-//
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -103,8 +112,8 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+    app.UseCors("AllowSpecificOrigin");
 }
-app.UseCors("AllowSpecificOrigin");
 
 app.UseHttpsRedirection();
 

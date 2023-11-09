@@ -117,6 +117,10 @@ namespace CalenderSystem.Api.Controllers
 			}
 
 		}
-
+		[HttpGet("access-denied")]
+		public IActionResult AccessDenied()
+		{
+			return Unauthorized("this user is unauthorized to access this info");
+		}
 	}
 }
