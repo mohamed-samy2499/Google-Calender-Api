@@ -4,9 +4,12 @@ using CalenderSystem.Infrastructure;
 using CalenderSystem.Infrastructure.Database;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,17 +53,31 @@ builder.Services.AddSwaggerGen(options =>
 //Adding the DbContext 
 builder.Services.AddDbContext<AppDbContext>(opt =>
 				opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+//add google auth
+// add authentication services 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = false;
+    o.SaveToken = false;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+        ValidAudience = builder.Configuration["JWT:ValidAudience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+    };
+});
 // adding identity services like user manager, role manager etc.
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
-//add google auth
-builder.Services.AddAuthentication()
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["Authentication:Google:client_id"];
-    options.ClientSecret = builder.Configuration["Authentication:Google:client_secret"];
-});
+    .AddEntityFrameworkStores<AppDbContext>();
 //
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

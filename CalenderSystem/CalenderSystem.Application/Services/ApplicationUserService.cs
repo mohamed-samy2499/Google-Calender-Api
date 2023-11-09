@@ -35,7 +35,7 @@ namespace MovieSystem.Application.Services
         }
         public async Task<ApplicationUser> GetApplicationUserByEmailAsync(string email)
         {
-            return await _applicationUserRepository.GetByIdAsync(email);
+            return await _applicationUserRepository.GetByEmailAsync(email);
         }
         public async Task<ApplicationUser> UpdateApplicationUserAsync(ApplicationUser Dto)
         {

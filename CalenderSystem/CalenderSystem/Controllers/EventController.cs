@@ -11,13 +11,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using CalenderSystem.Api.Helper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace CalenderSystem.Api.Controllers
 {
-    [Authorize]
+    
     [Route("api/[controller]")]
     [ApiController]
-
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class EventController : ControllerBase
     {
         #region Ctor

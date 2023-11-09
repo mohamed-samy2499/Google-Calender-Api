@@ -15,6 +15,9 @@ using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using MovieSystem.Application.Services;
 using CalenderSystem.Infrastructure.Repositories.ApplicationUserRepositories;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.Configuration;
 
 namespace CalenderSystem.Application.Services
 {
@@ -23,14 +26,17 @@ namespace CalenderSystem.Application.Services
 		private readonly SignInManager<ApplicationUser> _signInManager;
 		private readonly UserManager<ApplicationUser> _userManager;
         private readonly HttpClient _httpClient;
+		private readonly IConfiguration _configuration;
 
         private readonly IApplicationUserRepository _applicationUserRepository;
 
         public AuthService(SignInManager<ApplicationUser> signInManager,
 			UserManager<ApplicationUser> userManager,
-            IApplicationUserRepository applicationUserRepository)
+            IApplicationUserRepository applicationUserRepository,
+            IConfiguration configuration)
 		{
-			_signInManager = signInManager;
+            _configuration = configuration;
+            _signInManager = signInManager;
 			_userManager = userManager;
 			_httpClient = new HttpClient();
             _applicationUserRepository = applicationUserRepository;
@@ -88,6 +94,8 @@ namespace CalenderSystem.Application.Services
 					var updateResult = await _applicationUserRepository.UpdateAsync(user);
 					if (updateResult == null)
 						return false;
+					//await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, new ClaimsPrincipal());
+					await _signInManager.SignInAsync(user, isPersistent: false);
 					return true;
 				}
 			}
@@ -98,9 +106,40 @@ namespace CalenderSystem.Application.Services
 			}
         }
 
-   
-		//a method for generating the google sign in link 
-		public string GetAuthCode(string authUrl, string redirectUrl, string clientId)
+        public async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
+        {
+            // Define the key and the issuer details (you can customize these based on your application)
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var issuer = _configuration["Jwt:Issuer"];
+
+            // Create claims for the user (you can add more claims as needed)
+            var claims = new[]
+            {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            // Add any other claims you need
+        };
+
+            // Define token expiration
+            var expiration = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["Jwt:ExpireHours"]));
+
+            // Create and sign the token
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: issuer,
+                claims: claims,
+                expires: expiration,
+                signingCredentials: credentials
+            );
+
+            // Serialize the token to a string
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return tokenString;
+        }
+        //a method for generating the google sign in link 
+        public string GetAuthCode(string authUrl, string redirectUrl, string clientId)
 		{
 			string scopeURL1 = authUrl + "?redirect_uri={0}&prompt={1}&response_type={2}&client_id={3}&scope={4}&access_type={5}";
 

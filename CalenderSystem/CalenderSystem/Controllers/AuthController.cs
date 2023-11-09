@@ -96,9 +96,15 @@ namespace CalenderSystem.Api.Controllers
 
 						//add or update the user if it already exists
 						var AddUserResult = await _authService.AddOrUpdateUserAsync(tokenRes, userInfo);
-						if (AddUserResult != null)
-							return AddUserResult ? Ok(tokenRes) 
+                        if (AddUserResult != null)
+						{
+                            var user = await _applicationUserService.GetApplicationUserByEmailAsync(userInfo.email);
+                            var token = await _authService.GenerateJwtTokenAsync(user);
+							if(token != null) 
+							return AddUserResult ? Ok(new { token = token }) 
 								: BadRequest("couldn't create or update the user");
+							return BadRequest("Couldn't generate token");
+						}
 					}
 					return BadRequest("token is null");
 				}
