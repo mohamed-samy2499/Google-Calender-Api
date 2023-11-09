@@ -1,28 +1,16 @@
 ﻿using AutoMapper;
-using Azure.Core;
 using CalenderSystem.Application.DTOs;
 using CalenderSystem.Application.Feature.Events.Commands.Models;
 using CalenderSystem.Application.Feature.Events.Commands.Validators;
 using CalenderSystem.Application.Feature.Events.Queries.Models;
-using CalenderSystem.Application.Feature.Events.Queries.Response;
 using CalenderSystem.Application.IServices;
-using CalenderSystem.Domain.Entities;
 using CalenderSystem.Domain.Entities.Identity;
 using CalenderSystem.Infrastructure.Database;
-using Google.Apis.Auth.OAuth2;
-using IdentityServer4.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http.Headers;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Text.Json;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using CalenderSystem.Api.Helper;
 
 namespace CalenderSystem.Api.Controllers
 {
@@ -136,68 +124,35 @@ namespace CalenderSystem.Api.Controllers
         {
             try
             {
-                //get the current logged in user
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
-                {
                     return BadRequest("User not found.");
-                }
-                //validate the model input
-                var addEventValidationCheck = new AddEventCommand()
-                {
-                    Summary = eventDto.Summary,
-                    Description = eventDto.Description,
-                    Location = eventDto.Location,
-                    StartDateTime = eventDto.StartTime,
-                    EndDateTime = eventDto.EndTime,
-                    RefreshToken = user.GoogleRefreshToken,
-                    UserId = user.Id
-                };
-                var validationResult = await new AddEventValidator().ValidateAsync(addEventValidationCheck);
+
+
+
+                var validationResult = await EventHelper.ValidateAddEventAsync(eventDto, user);
                 if (!validationResult.IsValid)
-                {
                     return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
-                }
-                //add the event to google calendar
-                var response = await _eventService.AddGoogleCalendarEvent(eventDto, user,
-                    clientId, clientSecret);
-                if (!string.IsNullOrEmpty(response))
+
+                var response = await _eventService.AddGoogleCalendarEvent(eventDto, user, clientId, clientSecret);
+                if (string.IsNullOrEmpty(response))
+                    return BadRequest("Failed to add the event to Google Calendar");
+
+                var addEventCommand = EventHelper.CreateAddEventCommand(eventDto, user, response);
+                var result = await _mediator.Send(addEventCommand);
+
+                if (!result.Succeeded)
                 {
-                    //add the event to our database
-                    var addEventCommand = new AddEventCommand()
-                    {
-                        Summary = eventDto.Summary,
-                        Description = eventDto.Description,
-                        Location = eventDto.Location,
-                        StartDateTime = eventDto.StartTime,
-                        EndDateTime = eventDto.EndTime,
-                        RefreshToken = user.GoogleRefreshToken,
-                        GoogleCalendarEventId = response,
-                        UserId = user.Id
-                    };
-                    var result = await _mediator.Send(addEventCommand);
-                    if (result.Succeeded)
-                            return Ok(addEventCommand);
-                    else
-                    {
-                        var deleteEventFromCalendarResult = await _eventService.DeleteGoogleCalendarEvent(response,
-                            user, clientId, clientSecret);
-                        return BadRequest(result.Message);
-                    }
+                    var deleteEventFromCalendarResult = await _eventService.DeleteGoogleCalendarEvent(response, user, clientId, clientSecret);
+                    return BadRequest(result.Message);
                 }
-                else
-                {
-                    // Handle the error
-                    return BadRequest("failed to add the event to google calendar");
-                }
-                
- 
+
+                return Ok(addEventCommand);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
-
         }
 
         [HttpPost("update-event")]
@@ -205,54 +160,31 @@ namespace CalenderSystem.Api.Controllers
         {
             try
             {
-                //get the current logged in user
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
-                {
                     return BadRequest("User not found.");
-                }
-                //validate the update model
-                var updateEventValidationCheck = new UpdateEventCommand()
-                {
-                    Id = eventDto.Id,
-                    Summary = eventDto.Summary,
-                    Description = eventDto.Description,
-                    Location = eventDto.Location,
-                    StartDateTime = eventDto.StartTime,
-                    EndDateTime = eventDto.EndTime,
-                    GoogleCalendarEventId = eventDto.GoogleCalendarEventId
-                };
-                var validationResult = await new UpdateEventValidator().ValidateAsync(updateEventValidationCheck);
+
+                var validationResult = await EventHelper.ValidateUpdateEventAsync(eventDto, user);
                 if (!validationResult.IsValid)
-                {
                     return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
-                }
-                //update the event in google calendar
-                var response = await _eventService.UpdateGoogleCalendarEvent(eventDto, user,
-                    clientId, clientSecret);
-                if (!string.IsNullOrEmpty(response))
-                {
-                    //get the existing event in the database
-                    var existingEventResult = await _mediator.Send(new GetEventByIdQuery()
-                    {
-                        EventId = eventDto.Id
-                    });
-                    if (existingEventResult.Succeeded)
-                    {
-                        var existingEvent = existingEventResult.Data;
-                        //update the event in our database
-                        updateEventValidationCheck.UserId = user.Id;
-                        var result = await _mediator.Send(updateEventValidationCheck);
-                        if (result.Succeeded)
-                            return Ok(result);
-                        return BadRequest(result);
-                    }
+
+                var response = await _eventService.UpdateGoogleCalendarEvent(eventDto, user, clientId, clientSecret);
+                if (string.IsNullOrEmpty(response))
+                    return BadRequest("Failed to update the event in Google Calendar");
+
+                var existingEventResult = await _mediator.Send(new GetEventByIdQuery() { EventId = eventDto.Id });
+
+                if (!existingEventResult.Succeeded)
                     return BadRequest(existingEventResult);
-                }
-                else
-                {
-                    return BadRequest("failed to update the event in google calendar");
-                }
+
+                var existingEvent = existingEventResult.Data;
+                var updateEventValidationCheck = EventHelper.CreateUpdateEventCommand(eventDto, user);
+                var result = await _mediator.Send(updateEventValidationCheck);
+
+                if (!result.Succeeded)
+                    return BadRequest(result);
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -265,50 +197,37 @@ namespace CalenderSystem.Api.Controllers
         {
             try
             {
-                if(eventId > 0)
-                {
-                    //get the existing event in the database
-                    var existingEventResult = await _mediator.Send(new GetEventByIdQuery()
-                    {
-                        EventId = eventId
-                    });
-                    if (existingEventResult.Succeeded)
-                    {
-                        var user = await _userManager.GetUserAsync(User);
-                        if (user == null)
-                        {
-                            return BadRequest("User not found.");
-                        }
-                        //validate the update model
-                        var deleteEventValidationCheck = new DeleteEventCommand()
-                        {
-                            EventId = eventId
-                        };
-                        var validationResult = await new DeleteEventValidator().ValidateAsync(deleteEventValidationCheck);
-                        if (!validationResult.IsValid)
-                        {
-                            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
-                        }
-                        var googleCalendarEventId = existingEventResult.Data.GoogleCalendarEventId;
-                        var result = await  _eventService.DeleteGoogleCalendarEvent(googleCalendarEventId,
-                            user, clientId, clientSecret);
-                        if (result)
-                        {                            
-                            //delete the event in our database
-                            var deleteResult = await _mediator.Send(deleteEventValidationCheck);
-                            if (deleteResult.Succeeded)
-                                return Ok(deleteResult);
-                            return BadRequest(deleteResult);
-                        }
-                        else
-                        {
-                            return BadRequest("can't delete the google calendar event");
-                        }
-                        
-                    }
+                if (eventId <= 0)
+                    return BadRequest("Event Id must be greater than 0");
+
+                var existingEventResult = await _mediator.Send(new GetEventByIdQuery() { EventId = eventId });
+
+                if (!existingEventResult.Succeeded)
                     return BadRequest(existingEventResult);
+
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                    return BadRequest("User not found.");
+
+                var validationResult = await new DeleteEventValidator().ValidateAsync(new DeleteEventCommand() { EventId = eventId });
+
+                if (!validationResult.IsValid)
+                    return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
+
+                var googleCalendarEventId = existingEventResult.Data.GoogleCalendarEventId;
+                var result = await _eventService.DeleteGoogleCalendarEvent(googleCalendarEventId, user, clientId, clientSecret);
+
+                if (result)
+                {
+                    var deleteResult = await _mediator.Send(new DeleteEventCommand() { EventId = eventId });
+
+                    if (deleteResult.Succeeded)
+                        return Ok(deleteResult);
+
+                    return BadRequest(deleteResult);
                 }
-                return BadRequest("event Id can't be less than or equal to 0");
+
+                return BadRequest("Can't delete the Google Calendar event");
             }
             catch (Exception e)
             {
